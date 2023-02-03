@@ -8,11 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class TestOptional {
+public class TestOptional implements Supplier<Optional<String>> {
 
     private Optional<String> empty;
     private Optional<String> val;
@@ -50,7 +51,7 @@ public class TestOptional {
 
     @Test
     public void testIfPresentWhenEmpty() {
-        empty.ifPresent(v -> setResult(v));
+        empty.ifPresent(v -> setResult(v)); // setResult should not be called
         assertNull(result);
     }
 
@@ -60,7 +61,63 @@ public class TestOptional {
         assertEquals("foo", result);
     }
 
+    @Test
+    public void testFilterWhenPresent() {
+        Optional<String> filtered = val.filter(v -> "foo".equals(v));
+        assertEquals("foo", filtered.get());
+    }
+
+    @Test
+    public void testOrWhenEmpty() {
+        assertEquals("bar", empty.or(this).get());
+    }
+
+    @Test
+    public void testOrWhenPresent() {
+        assertEquals("foo", val.or(this).get());
+    }
+
+    @Test
+    public void testOrElseWhenEmpty() {
+        assertEquals("bar", empty.orElse("bar"));
+    }
+
+    @Test
+    public void testOrElseWhenPresent() {
+        assertEquals("foo", val.orElse("bar"));
+    }
+
+    @Test
+    public void testOrElseGetWhenEmpty() {
+        assertEquals("helper", empty.orElseGet(new SupplyHelper()));
+    }
+
+    @Test
+    public void testOrElseGetWhenPresent() {
+        assertEquals("foo", val.orElseGet(new SupplyHelper()));
+    }
+
+    @Test
+    public void testOrElseThrowWhenEmpty() {
+        assertThrows(NoSuchElementException.class, () -> empty.orElseThrow());
+    }
+
+    @Test
+    public void testOrElseThrowWhenPresent() {
+        assertEquals("foo", val.orElseThrow());
+    }
+
+    public Optional<String> get() {
+        return Optional.of("bar");
+    }
+
     private void setResult(String result) {
         this.result = result;
+    }
+
+    static class SupplyHelper implements Supplier<String> {
+        public String get() {
+            return "helper";
+        }
     }
 }
